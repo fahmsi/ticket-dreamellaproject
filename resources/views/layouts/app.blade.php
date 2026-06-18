@@ -183,6 +183,17 @@
         }
         .nav-toggler:focus { box-shadow: none; outline: none; }
 
+        @media (min-width: 992px) {
+            #mainNav {
+                display: flex !important;
+                align-items: center;
+                justify-content: space-between;
+                flex-basis: auto;
+                flex-grow: 1;
+                gap: 1rem;
+            }
+        }
+
         /* Non-home pages: light background */
         body.page-light {
             background: #f6f7fb;

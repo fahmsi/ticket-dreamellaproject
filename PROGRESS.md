@@ -107,3 +107,11 @@
 - `php artisan route:list`: sukses, 57 route terdaftar.
 - `php artisan test`: sukses, 10 tests / 35 assertions.
 - `php artisan view:clear`: sukses.
+
+## Perbaikan Navbar Desktop
+
+- Tombol `Masuk`, `Daftar`, profil, dan logout tidak terlihat di desktop karena menu memakai Bootstrap `collapse` tanpa aturan expand desktop.
+- Ditambahkan CSS `@media (min-width: 992px)` untuk membuat `#mainNav` tampil sebagai flex di desktop, sambil tetap mempertahankan hamburger collapse di mobile.
+- `php artisan view:cache`: sukses.
+- `php artisan test`: sukses, 10 tests / 35 assertions.
+- `php artisan view:clear`: sukses.
