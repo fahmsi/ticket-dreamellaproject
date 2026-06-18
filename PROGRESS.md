@@ -23,6 +23,11 @@
   - Command `transactions:expire-pending` untuk mengubah transaksi `pending_payment` melewati deadline menjadi `expired`.
   - Scheduler Laravel menjalankan expiry transaksi pending setiap jam.
   - `.env.example` disiapkan untuk database MySQL `dreamella_ticket` dan identitas mail Dreamella.
+- Penyesuaian desain:
+  - Landing page baru dipakai sebagai arah visual utama Dreamella.
+  - Layout global diberi tema gelap/glassmorphism, token warna Dreamella, navbar baru, toast alert, form, table, card, pagination, dan button yang konsisten.
+  - Semua halaman non-home memakai body class `inner-page` agar mengikuti desain landing page.
+  - Semua halaman admin memakai body class `admin-page` dengan sidebar kaca, ikon menu, tabel gelap, dan panel dashboard yang senada.
 
 ## File Utama Dibuat/Diubah
 
@@ -44,6 +49,9 @@
 - `README.md`, `PROGRESS.md`, `TODO.md`
 - `app/Console/Commands/ExpirePendingTransactions.php`
 - `app/Services/TransactionExpiryService.php`
+- `resources/views/layouts/app.blade.php`
+- `resources/views/layouts/admin.blade.php`
+- `resources/views/home.blade.php`
 
 ## Perintah yang Sudah Dijalankan
 
@@ -60,6 +68,10 @@
 - `php artisan view:clear`
 - `php artisan test --filter=DreamellaFlowTest`
 - `php artisan transactions:expire-pending`
+- `php artisan view:cache`
+- `php artisan route:list`
+- `php artisan test`
+- `php artisan view:clear`
 
 ## Error dan Solusi
 
@@ -86,5 +98,12 @@
 - `php artisan route:list`: sukses, 57 route terdaftar.
 - `php artisan view:cache`: sukses.
 - `php artisan transactions:expire-pending`: sukses, command tersedia dan berjalan.
+- `php artisan test`: sukses, 10 tests / 35 assertions.
+- `php artisan view:clear`: sukses.
+
+## Hasil Pengecekan Desain Global
+
+- `php artisan view:cache`: sukses, semua Blade compile.
+- `php artisan route:list`: sukses, 57 route terdaftar.
 - `php artisan test`: sukses, 10 tests / 35 assertions.
 - `php artisan view:clear`: sukses.

@@ -10,6 +10,8 @@
 
 - Tambahkan package QR code scannable seperti `simplesoftwareio/simple-qrcode` bila environment mengizinkan.
 - Tambahkan export PDF laporan atau PDF e-ticket.
+- Review visual manual di browser untuk setiap halaman setelah data produksi/demo lengkap.
+- Tambahkan asset poster asli Dreamella jika sudah tersedia.
 
 ## Prioritas Rendah
 
