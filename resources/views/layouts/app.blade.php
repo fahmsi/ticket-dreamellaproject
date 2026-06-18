@@ -615,15 +615,16 @@
                         <i class="bi bi-calendar-event"></i> Event
                     </a>
                     @auth
-                        <a class="nav-link-item" href="{{ route('transactions.index') }}" id="nav-transactions">
-                            <i class="bi bi-receipt"></i> Transaksi
-                        </a>
-                        <a class="nav-link-item" href="{{ route('my-tickets.index') }}" id="nav-tickets">
-                            <i class="bi bi-ticket-perforated"></i> Tiket Saya
-                        </a>
                         @if(auth()->user()->isAdmin())
                             <a class="nav-link-item" href="{{ route('admin.dashboard') }}" id="nav-admin">
                                 <i class="bi bi-shield-check"></i> Admin
+                            </a>
+                        @else
+                            <a class="nav-link-item" href="{{ route('transactions.index') }}" id="nav-transactions">
+                                <i class="bi bi-receipt"></i> Transaksi
+                            </a>
+                            <a class="nav-link-item" href="{{ route('my-tickets.index') }}" id="nav-tickets">
+                                <i class="bi bi-ticket-perforated"></i> Tiket Saya
                             </a>
                         @endif
                     @endauth
