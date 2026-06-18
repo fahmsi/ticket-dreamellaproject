@@ -60,6 +60,18 @@ php artisan storage:link
 php artisan serve
 ```
 
+Untuk mengaktifkan expiry otomatis transaksi pending, pasang scheduler Laravel di server:
+
+```bash
+* * * * * cd /path/to/dreamella-ticket && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Command expiry juga bisa dijalankan manual:
+
+```bash
+php artisan transactions:expire-pending
+```
+
 ## Akun Demo
 
 - Admin: `admin@dreamella.test` / `password`
@@ -85,6 +97,7 @@ php artisan serve
 - Terima pembayaran untuk menerbitkan tiket dan email otomatis.
 - Tolak pembayaran dengan alasan.
 - Lihat laporan di `/admin/reports/sales`.
+- Filter laporan berdasarkan tanggal, event, dan jenis tiket. Export CSV mengikuti filter yang aktif.
 - Validasi/check-in tiket di `/admin/check-in`.
 
 ## Email
@@ -92,6 +105,19 @@ php artisan serve
 Default `.env` memakai `MAIL_MAILER=log`, sehingga email disimpan ke log saat demo lokal. Untuk SMTP, isi konfigurasi mail Laravel sesuai server email yang digunakan.
 
 Jika email gagal, transaksi tetap `paid` dan error dicatat di tabel `ticket_email_logs`.
+
+Contoh konfigurasi SMTP:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=your_username
+MAIL_PASSWORD=your_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@dreamella.test
+MAIL_FROM_NAME="Dreamella Project"
+```
 
 ## Testing
 

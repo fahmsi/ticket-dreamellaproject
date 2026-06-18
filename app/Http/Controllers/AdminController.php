@@ -20,11 +20,24 @@ class AdminController extends Controller
 {
     public function dashboard()
     {
+        $paidTransactions = Transaction::with('details.ticket.event')
+            ->where('status', 'paid')
+            ->get();
+
+        $salesByEvent = $paidTransactions
+            ->flatMap->details
+            ->groupBy(fn ($detail) => $detail->ticket->event->title)
+            ->map(fn ($details) => [
+                'tickets' => $details->sum('quantity'),
+                'revenue' => $details->sum('subtotal'),
+            ])
+            ->sortByDesc('revenue');
+
         $stats = [
             'events' => Event::count(),
             'transactions' => Transaction::count(),
             'tickets_sold' => IssuedTicket::where('status', 'active')->count(),
-            'revenue' => Transaction::where('status', 'paid')->sum('total_amount'),
+            'revenue' => $paidTransactions->sum('total_amount'),
             'waiting' => Transaction::where('status', 'waiting_verification')->count(),
         ];
 
@@ -33,7 +46,7 @@ class AdminController extends Controller
             ->take(8)
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'latestTransactions'));
+        return view('admin.dashboard', compact('stats', 'latestTransactions', 'salesByEvent'));
     }
 
     public function events(Request $request)
@@ -214,17 +227,31 @@ class AdminController extends Controller
             ->where('status', 'paid')
             ->when($request->filled('from'), fn ($query) => $query->whereDate('paid_at', '>=', $request->from))
             ->when($request->filled('to'), fn ($query) => $query->whereDate('paid_at', '<=', $request->to))
-            ->when($request->filled('event_id'), fn ($query) => $query->whereHas('details.ticket', fn ($q) => $q->where('event_id', $request->event_id)));
+            ->when($request->filled('event_id'), fn ($query) => $query->whereHas('details.ticket', fn ($q) => $q->where('event_id', $request->event_id)))
+            ->when($request->filled('ticket_id'), fn ($query) => $query->whereHas('details', fn ($q) => $q->where('ticket_id', $request->ticket_id)));
 
         $transactions = (clone $paid)->latest('paid_at')->paginate(20)->withQueryString();
+        $transactions->getCollection()->transform(function (Transaction $transaction) use ($request) {
+            $details = $this->filteredReportDetails($transaction, $request);
+
+            $transaction->setAttribute('report_tickets', $details->sum('quantity'));
+            $transaction->setAttribute('report_amount', $details->sum('subtotal'));
+
+            return $transaction;
+        });
+
+        $summarySource = (clone $paid)->get();
+        $summaryDetails = $summarySource->flatMap(fn (Transaction $transaction) => $this->filteredReportDetails($transaction, $request));
+
         $summary = [
-            'transactions' => (clone $paid)->count(),
-            'revenue' => (clone $paid)->sum('total_amount'),
-            'tickets' => (clone $paid)->get()->flatMap->details->sum('quantity'),
+            'transactions' => $summarySource->count(),
+            'revenue' => $summaryDetails->sum('subtotal'),
+            'tickets' => $summaryDetails->sum('quantity'),
         ];
         $events = Event::orderBy('title')->get();
+        $tickets = Ticket::with('event')->orderBy('name')->get();
 
-        return view('admin.reports.sales', compact('transactions', 'summary', 'events'));
+        return view('admin.reports.sales', compact('transactions', 'summary', 'events', 'tickets'));
     }
 
     public function exportReports(Request $request)
@@ -233,16 +260,23 @@ class AdminController extends Controller
             ->where('status', 'paid')
             ->when($request->filled('from'), fn ($query) => $query->whereDate('paid_at', '>=', $request->from))
             ->when($request->filled('to'), fn ($query) => $query->whereDate('paid_at', '<=', $request->to))
+            ->when($request->filled('event_id'), fn ($query) => $query->whereHas('details.ticket', fn ($q) => $q->where('event_id', $request->event_id)))
+            ->when($request->filled('ticket_id'), fn ($query) => $query->whereHas('details', fn ($q) => $q->where('ticket_id', $request->ticket_id)))
             ->get();
 
-        $csv = "Kode,Nama Customer,Event,Total,Status,Tanggal Bayar\n";
+        $csv = "Kode,Nama Customer,Event,Jenis Tiket,Jumlah Tiket,Total Filter,Status,Tanggal Bayar\n";
         foreach ($rows as $transaction) {
-            $event = $transaction->event()?->title;
+            $details = $this->filteredReportDetails($transaction, $request);
+            $event = $details->pluck('ticket.event.title')->filter()->unique()->implode(' | ');
+            $ticketNames = $details->pluck('ticket.name')->filter()->unique()->implode(' | ');
+
             $csv .= implode(',', [
                 $transaction->code,
                 $transaction->user->name,
-                $event,
-                $transaction->total_amount,
+                $this->csvValue($event),
+                $this->csvValue($ticketNames),
+                $details->sum('quantity'),
+                $details->sum('subtotal'),
                 $transaction->status,
                 optional($transaction->paid_at)->format('Y-m-d H:i:s'),
             ])."\n";
@@ -362,5 +396,20 @@ class AdminController extends Controller
             'instructions' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
         ]) + ['is_active' => false];
+    }
+
+    private function filteredReportDetails(Transaction $transaction, Request $request)
+    {
+        return $transaction->details
+            ->when($request->filled('event_id'), fn ($details) => $details->where('ticket.event_id', (int) $request->event_id))
+            ->when($request->filled('ticket_id'), fn ($details) => $details->where('ticket_id', (int) $request->ticket_id))
+            ->values();
+    }
+
+    private function csvValue(?string $value): string
+    {
+        $value ??= '';
+
+        return '"'.str_replace('"', '""', $value).'"';
     }
 }

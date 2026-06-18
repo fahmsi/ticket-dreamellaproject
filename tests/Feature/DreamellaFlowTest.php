@@ -6,6 +6,7 @@ use App\Mail\TicketConfirmedMail;
 use App\Models\Event;
 use App\Models\Payment;
 use App\Models\Ticket;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -160,5 +161,78 @@ class DreamellaFlowTest extends TestCase
         $issuedTicket = $transaction->fresh()->issuedTickets()->first();
 
         $this->actingAs($other)->get(route('my-tickets.show', $issuedTicket->ticket_code))->assertForbidden();
+    }
+
+    public function test_admin_sales_report_can_be_filtered_by_ticket_type(): void
+    {
+        $this->seed();
+        $admin = User::where('role', 'admin')->first();
+        $customer = User::where('role', 'customer')->first();
+        [$firstTicket, $secondTicket] = Ticket::take(2)->get();
+
+        $firstTransaction = Transaction::create([
+            'user_id' => $customer->id,
+            'code' => 'TRX-FILTER-1',
+            'total_amount' => $firstTicket->price,
+            'status' => 'paid',
+            'paid_at' => now(),
+            'verified_at' => now(),
+        ]);
+        $firstTransaction->details()->create([
+            'ticket_id' => $firstTicket->id,
+            'quantity' => 1,
+            'price' => $firstTicket->price,
+            'subtotal' => $firstTicket->price,
+        ]);
+
+        $secondTransaction = Transaction::create([
+            'user_id' => $customer->id,
+            'code' => 'TRX-FILTER-2',
+            'total_amount' => $secondTicket->price,
+            'status' => 'paid',
+            'paid_at' => now(),
+            'verified_at' => now(),
+        ]);
+        $secondTransaction->details()->create([
+            'ticket_id' => $secondTicket->id,
+            'quantity' => 1,
+            'price' => $secondTicket->price,
+            'subtotal' => $secondTicket->price,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.sales', ['ticket_id' => $firstTicket->id]))
+            ->assertOk()
+            ->assertSee('TRX-FILTER-1')
+            ->assertDontSee('TRX-FILTER-2');
+    }
+
+    public function test_pending_transactions_can_be_expired_by_command(): void
+    {
+        $this->seed();
+        $customer = User::where('role', 'customer')->first();
+
+        $expired = Transaction::create([
+            'user_id' => $customer->id,
+            'code' => 'TRX-EXPIRED',
+            'total_amount' => 100000,
+            'status' => 'pending_payment',
+            'payment_deadline' => now()->subMinute(),
+        ]);
+
+        $active = Transaction::create([
+            'user_id' => $customer->id,
+            'code' => 'TRX-ACTIVE',
+            'total_amount' => 100000,
+            'status' => 'pending_payment',
+            'payment_deadline' => now()->addHour(),
+        ]);
+
+        $this->artisan('transactions:expire-pending')
+            ->expectsOutput('Expired 1 pending transaction(s).')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('transactions', ['id' => $expired->id, 'status' => 'expired']);
+        $this->assertDatabaseHas('transactions', ['id' => $active->id, 'status' => 'pending_payment']);
     }
 }

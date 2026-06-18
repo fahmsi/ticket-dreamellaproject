@@ -16,6 +16,13 @@
 - Mailable: `TicketConfirmedMail`.
 - Feature tests untuk alur inti.
 - README dokumentasi instalasi, akun demo, alur, dan testing.
+- Lanjutan tahap berikutnya:
+  - Filter laporan penjualan berdasarkan jenis tiket.
+  - Export CSV laporan mengikuti filter tanggal, event, dan jenis tiket.
+  - Dashboard admin memiliki grafik bar penjualan per event.
+  - Command `transactions:expire-pending` untuk mengubah transaksi `pending_payment` melewati deadline menjadi `expired`.
+  - Scheduler Laravel menjalankan expiry transaksi pending setiap jam.
+  - `.env.example` disiapkan untuk database MySQL `dreamella_ticket` dan identitas mail Dreamella.
 
 ## File Utama Dibuat/Diubah
 
@@ -35,6 +42,8 @@
 - `resources/views/*`
 - `tests/Feature/DreamellaFlowTest.php`
 - `README.md`, `PROGRESS.md`, `TODO.md`
+- `app/Console/Commands/ExpirePendingTransactions.php`
+- `app/Services/TransactionExpiryService.php`
 
 ## Perintah yang Sudah Dijalankan
 
@@ -49,6 +58,8 @@
 - `php artisan storage:link`
 - `php artisan test`
 - `php artisan view:clear`
+- `php artisan test --filter=DreamellaFlowTest`
+- `php artisan transactions:expire-pending`
 
 ## Error dan Solusi
 
@@ -68,4 +79,12 @@
 - `php artisan route:list`: sukses, 57 route terdaftar.
 - `php artisan view:cache`: sukses.
 - `php artisan storage:link`: sukses.
-- `php artisan test`: sukses, 8 tests / 28 assertions.
+- `php artisan test`: sukses, 10 tests / 35 assertions.
+
+## Hasil Pengecekan Lanjutan
+
+- `php artisan route:list`: sukses, 57 route terdaftar.
+- `php artisan view:cache`: sukses.
+- `php artisan transactions:expire-pending`: sukses, command tersedia dan berjalan.
+- `php artisan test`: sukses, 10 tests / 35 assertions.
+- `php artisan view:clear`: sukses.
